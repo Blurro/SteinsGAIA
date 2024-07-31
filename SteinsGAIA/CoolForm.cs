@@ -221,19 +221,20 @@ namespace SteinsGAIA
                     // formatting - each rule will be one chunk of code, no empty lines between them, and separated by these // RULE comments
 
                     // RULE ONE: a BTT arriving in the past will arrive before any events that have a higher date.
-                    Console.WriteLine(wlStart);
-                    Console.ReadKey();
-
-                    if (wlCounter > 1 && GloDat.evType == "bttdep") // if this is the 2nd+ wl, and last one ended via btt, then this deletes all events happening after the btt arival date, preserving all with a date prior or equal
+                    
+                    //Console.WriteLine(wlCounter + " and " + GloDat.evType);
+                    if (wlCounter > 1 && GloDat.evType == "bttarv") // if this is the 2nd+ wl, and last one ended via btt, then this deletes all events happening after the btt arival date, preserving all with a date prior or equal
                     {
                         int j = GloDat.DateOrd.IndexOf(GloDat.evDate);
-                        foreach (string ev in CurrentWorldLine)
+                        for (int i = CurrentWorldLine.Count - 1; i >= 0; i--)
                         {
-                            ParseEvent(ev); // parsing an event loads its data into each GloDat variable such as evDate (ev = event)
+                            string ev = CurrentWorldLine[i];
+                            ParseEvent(ev);
                             if (GloDat.DateOrd.IndexOf(GloDat.evDate) > j)
                             {
                                 CurrentWorldLine.Remove(ev); // remove all events happening after the arriving BTT date. they may return based on causes in later rules.
-                            } else
+                            }
+                            else
                             {
                                 Console.WriteLine(ParseEvent(ev)); // parsing an event will also return a readable sentence version rather than code
                             }
@@ -259,7 +260,7 @@ namespace SteinsGAIA
                             Console.WriteLine(parsed);
                         }
 
-                        // RULE THREE: if the event being added is a BTT departure then this spells the end of the current worldline, but ONLY IF [its arrival exists on the current worldline] OR [its arrival + all current events prior to its arrival do NOT identically match the beginning timeline of ANY prior active worldline, only scanning backwards until the starting worldline of the current AF that was NOT reached via BTT]
+                        // RULE THREE: if the event being added is a BTT departure then this spells the end of the current worldline, but ONLY IF [its identical arrival exists on the current worldline] OR [its arrival + all current events prior to its arrival do NOT identically match the beginning timeline of ANY prior active worldline, only scanning backwards until the starting worldline of the current AF that was NOT reached via BTT]
                         // tl;dr no change no shift
 
                         // FIX THIS TO BE, IF THE ARRIVAL + ALL IDENTICAL EVENTS PRIOR ARRIVAL (AND ONLY THESE, NO LESS NO MORE) HAVE EXISTED ON A PRIOR GENERATED WORLDLINE, THEN IT CAN BE SKIPPED
