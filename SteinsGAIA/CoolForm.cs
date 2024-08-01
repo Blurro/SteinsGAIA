@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static Program;
@@ -222,7 +223,6 @@ namespace SteinsGAIA
 
                     // RULE ONE: a BTT arriving in the past will arrive before any events that have a higher date.
                     
-                    //Console.WriteLine(wlCounter + " and " + GloDat.evType);
                     if (wlCounter > 1 && GloDat.evType == "bttarv") // if this is the 2nd+ wl, and last one ended via btt, then this deletes all events happening after the btt arival date, preserving all with a date prior or equal
                     {
                         int j = GloDat.DateOrd.IndexOf(GloDat.evDate);
@@ -378,6 +378,48 @@ namespace SteinsGAIA
                     File.WriteAllLines(selectedFilePath, FileLines);
                 }
             }
+        }
+
+        private async void AddEv_Click(object sender, EventArgs e)
+        {
+            if (panel1.Visible == false)
+            {
+                panel1.Visible = true;
+                bool logo = false;
+                PrintConsole(logo);
+                Console.WriteLine("For any input, type '/cancel' to escape without modifying the config.\n");
+                Console.WriteLine("Add normal or TT event? Enter 'n' or 'tt'.\n(normal = 'okabe walks to the shop', special = btt departure etc)");
+                for (int i = 0; i < 1; i+=0)
+                {
+                    string input = await ReadConsoleInputAsync();
+                    if (input == "/cancel") { break; }
+                    if (input == "n")
+                    {
+
+                    } else if (input == "tt")
+                    {
+
+                    } else { continue; }
+                    break;
+                }
+                panel1.Visible = false;
+            }
+        }
+
+        private Task<string> ReadConsoleInputAsync()
+        {
+            return Task.Run(() =>
+            {
+                while (Console.KeyAvailable) { Console.ReadKey(true); } // clears input buffer
+                string input = Console.ReadLine();
+                if (input == "/cancel") { Console.WriteLine("Cancelled event creation"); }
+                return input;
+            });
+        }
+
+        private void label9_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
