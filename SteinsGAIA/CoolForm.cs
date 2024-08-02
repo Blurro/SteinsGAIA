@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -36,23 +38,22 @@ namespace SteinsGAIA
 
         public void LoadAllLists(List<string> lisData, int lisNum)
         {
-            listBoxes[0] = listBox1;
-            listBoxes[1] = listBox2;
-            listBoxes[2] = listBox3;
-            listBoxes[3] = listBox4;
-            listBoxes[4] = listBox5;
-            listBoxes[5] = listBox6;
-            listBoxes[6] = listBox7;
-            listBoxes[7] = listBox8;
+            listBoxes[0] = listBox1; //events
+            listBoxes[1] = listBox2; //causes
+            listBoxes[2] = listBox3; //entities
+            listBoxes[3] = listBox4; //af
+            listBoxes[4] = listBox5; //dates
+            listBoxes[5] = listBox6; //rs
+            listBoxes[6] = listBox7; //starter
+            listBoxes[7] = listBox8; //bttdates
             int i = 0;
+            listBoxes[lisNum].Items.Clear();
 
             foreach (string s in lisData)
             {
                 i++;
-                if (new[] { 3, 4, 5 }.Contains(lisNum))
-                {
-                    listBoxes[lisNum].Items.Add(s);
-                } else if (lisNum == 6)
+                //if (new[] { 3, 4, 5 }.Contains(lisNum)) {listBoxes[lisNum].Items.Add(s);} else 
+                if (lisNum == 6)
                 {
                     listBoxes[lisNum].Items.Add("[" + (GloDat.Events.IndexOf(s) + 1) + "] " + ParseEvent(s));
                 }
@@ -357,7 +358,7 @@ namespace SteinsGAIA
             }
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        private void button3_Click(object sender, EventArgs e) // save button
         {
             using (SaveFileDialog saveFileDialog = new SaveFileDialog())
             {
@@ -380,40 +381,179 @@ namespace SteinsGAIA
             }
         }
 
+        private static string CheckDateFormat(string[] parts)
+        {
+            string buildDate;
+            int year = -1;
+            int month;
+            int day;
+            int hour;
+            int minute;
+            if (int.TryParse(parts[0], out var value))
+            {
+                year = value;
+                month = (parts.Length > 1 && int.TryParse(parts[1], out var m)) ? ((m < 13) ? m : -1) : -1;
+                day = (parts.Length > 2 && int.TryParse(parts[2], out var d)) ? ((d < 32) ? d : -1) : -1; // in theory feb 31st can be entered but it doesnt rly matter the user can do that if they want ig
+                hour = (parts.Length > 3 && int.TryParse(parts[3], out var h)) ? ((h < 24) ? h : -1) : -1;
+                minute = (parts.Length > 4 && int.TryParse(parts[4], out var min)) ? ((min < 60) ? min : -1) : -1;
+                buildDate = $"{year}{(month < 1 ? "" : $":{month}{(day < 1 ? "" : $":{day}{(hour < 0 ? "" : $":{hour}{(minute < 0 ? "" : $":{minute}")}")}")}")}";
+            }
+            else
+            {
+                buildDate = parts[0];
+            }
+            if (year == -1)
+            {
+                GloDat.random = buildDate;
+                return ""; //we still use buildDate but the code after calling this needs to know its not a valid format
+            } else
+            {
+                return buildDate;
+            }
+        }
+
+        private async Task InsertNewDate(string newDate)
+        {
+            if (GloDat.DateOrd.Contains(newDate))
+            {
+                return;
+            }
+            string buildDate = CheckDateFormat(newDate.Split(':'));
+            if (buildDate == "") // if invalid date format (still uses date but prompts manual adding)
+            {
+                buildDate = GloDat.random;//takes it saved from the 'random' var since i had to return blank to enter this IF
+                Console.WriteLine($"Date '{buildDate}' unable to be placed automatically\nPlease enter a #num of the DATES list to insert this");
+                for (int i = 0; i < 1; i+=0)
+                {
+                    if ((GloDat.random = await AskUser("", "", "# /><~()\\*")) == "/cancel") return;
+                    if (int.TryParse(GloDat.random, out var pos))
+                    {
+                        if (pos > 0)
+                        {
+                            if (pos > GloDat.DateOrd.Count) { pos = GloDat.DateOrd.Count+1; }
+                            GloDat.DateOrd.Insert(pos-1, buildDate);
+                            Console.WriteLine($"Date inserted at position {pos}");
+                            break;
+                        }
+                    }
+                    Console.WriteLine("Not a valid position, retry or /cancel");
+                }
+            } else
+            {
+                int pos = InsertEntryDate(GloDat.DateOrd, buildDate);
+                Console.WriteLine($"Date auto inserted at position {pos}");
+            }
+            return;
+        }
+
+        static int InsertEntryDate(List<string> dates, string newEntry)
+        {
+            string[] newParts = newEntry.Split(':');
+            for (int i = dates.Count - 1; i >= 0; i--)
+            {
+                string[] currentParts = dates[i].Split(':');
+                string checkDate = CheckDateFormat(currentParts);
+                if (checkDate == "")
+                {
+                    continue;
+                }
+                for (int j = 0; j < newParts.Length; j++)
+                {
+                    int newValue = int.Parse(newParts[j]);
+                    if (j >= currentParts.Length || newValue > int.Parse(currentParts[j]))
+                    {
+                        dates.Insert(i + 1, newEntry);
+                        return i+1;
+                    }
+                    if (newValue < int.Parse(currentParts[j]))
+                    {
+                        break;
+                    }
+                }
+            }
+            dates.Insert(0, newEntry); // Insert at the start if it's smaller than all
+            return 0;
+        }
+
         private async void AddEv_Click(object sender, EventArgs e)
         {
             if (panel1.Visible == false)
             {
-                panel1.Visible = true;
-                bool logo = false;
-                PrintConsole(logo);
-                Console.WriteLine("For any input, type '/cancel' to escape without modifying the config.\n");
-                Console.WriteLine("Add normal or TT event? Enter 'n' or 'tt'.\n(normal = 'okabe walks to the shop', special = btt departure etc)");
-                for (int i = 0; i < 1; i+=0)
+                for (int i = 0; i < 1; i++)
                 {
-                    string input = await ReadConsoleInputAsync();
-                    if (input == "/cancel") { break; }
+                    panel1.Visible = true;
+                    bool logo = false;
+                    PrintConsole(logo);
+                    string input;
+                    Console.WriteLine("For any input, type '/cancel' to escape without modifying the config.\n");
+                    Console.WriteLine("Add normal or TT event? Enter 'n' or 'tt'.\n(normal = 'okabe walks to the shop', special = btt departure etc)");
+                    if ((input = await AskUser("n", "tt", "#/><~()\\*")) == "/cancel") break;
+                    string eventBuild;
                     if (input == "n")
                     {
+                        Console.WriteLine("Add an event (for example 'Okabe walks to the shop')");
+                        if ((eventBuild = await AskUser("", "", "#/><~()\\*")) == "/cancel") break;
+                        Console.WriteLine("Enter the date for this event (format 'year:month:day:hour:minute', minimum of first entry (year) required)\nExamples: 'x' '2010:08:30' '1975' '-500:01:12:23:59' '-17million");
+                        if ((input = await AskUser("", "", "# /><~()\\*")) == "/cancel") break;
 
-                    } else if (input == "tt")
+                        await InsertNewDate(input);
+                        if (GloDat.random == "/cancel") { GloDat.random = ""; break; }
+                        LoadAllLists(GloDat.allLists[4], 4);//updates dates listbox
+                        eventBuild = $"{eventBuild}#{input}";
+                        GloDat.Events.Add(eventBuild);
+                        LoadAllLists(GloDat.allLists[0], 0);//updates events listbox
+                        GloDat.EventCauses.Add("");
+                        LoadAllLists(GloDat.allLists[1], 1);//updates eventcauses listbox
+                        Console.WriteLine($"Created event '{ParseEvent(eventBuild)}' ({eventBuild})");
+                    }
+                    else
                     {
-
-                    } else { continue; }
-                    break;
+                        Console.WriteLine("Title your departure");
+                        if ((eventBuild = await AskUser("", "", "#/><~()\\*")) == "/cancel") break;
+                    }
                 }
                 panel1.Visible = false;
             }
         }
 
-        private Task<string> ReadConsoleInputAsync()
+        static async Task<string> AskUser(string option1, string option2, string removeChars)
         {
-            return Task.Run(() =>
+            return await Task.Run(() =>
             {
-                while (Console.KeyAvailable) { Console.ReadKey(true); } // clears input buffer
-                string input = Console.ReadLine();
-                if (input == "/cancel") { Console.WriteLine("Cancelled event creation"); }
-                return input;
+                for (int i = 0; i < 1; i += 0)
+                {
+                    while (Console.KeyAvailable) { Console.ReadKey(true); } // Clears input buffer
+                    string input = Console.ReadLine();
+
+                    if (input == "/cancel")
+                    {
+                        Console.WriteLine("Cancelled action");
+                        return "/cancel";
+                    }
+                    input = Regex.Replace(input.Trim(), $"[{removeChars}]", "");
+                    if (option1 != "")
+                    {
+                        if (input == option1)
+                        {
+                            return option1;
+                        }
+                        else if (input == option2)
+                        {
+                            return option2;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"\u001b[A\u001b[30m{input}\u001b[37m\u001b[A"); //blacks out input and returns to the line
+                        }
+                    } else if (input.Trim() == "")
+                    {
+                        Console.WriteLine($"\u001b[2A");
+                    } else
+                    {
+                        return input;
+                    }
+                }
+                return string.Empty; //unreachable
             });
         }
 

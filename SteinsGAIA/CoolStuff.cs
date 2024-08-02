@@ -29,6 +29,7 @@ public class Program
         public static string exeDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
         public static List<string> EventsSortedByDate = new List<string>();
         public static List<string> EventCausesSortedByDate = new List<string>();
+        public static string random = null;
     }
 
     public static void PrintConsole(bool logo)
