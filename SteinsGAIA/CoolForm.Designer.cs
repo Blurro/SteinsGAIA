@@ -253,7 +253,7 @@
             this.EditCause.Name = "EditCause";
             this.EditCause.Size = new System.Drawing.Size(99, 35);
             this.EditCause.TabIndex = 17;
-            this.EditCause.Text = "Edit";
+            this.EditCause.Text = "Edit/View";
             this.EditCause.UseVisualStyleBackColor = true;
             // 
             // AddTT
@@ -283,7 +283,7 @@
             this.EditEv.Name = "EditEv";
             this.EditEv.Size = new System.Drawing.Size(99, 35);
             this.EditEv.TabIndex = 20;
-            this.EditEv.Text = "Edit";
+            this.EditEv.Text = "Edit/View";
             this.EditEv.UseVisualStyleBackColor = true;
             this.EditEv.Click += new System.EventHandler(this.EditEv_Click);
             // 
@@ -294,8 +294,9 @@
             this.EditTT.Name = "EditTT";
             this.EditTT.Size = new System.Drawing.Size(99, 35);
             this.EditTT.TabIndex = 22;
-            this.EditTT.Text = "Edit";
+            this.EditTT.Text = "Edit/View";
             this.EditTT.UseVisualStyleBackColor = true;
+            this.EditTT.Click += new System.EventHandler(this.EditTT_Click);
             // 
             // EditAF
             // 

@@ -412,9 +412,9 @@ namespace SteinsGAIA
             }
         }
 
-        private async Task InsertNewDate(string newDate)
+        private async Task InsertDateToList(List<string> dateOrd, string newDate)
         {
-            if (GloDat.DateOrd.Contains(newDate))
+            if (dateOrd.Contains(newDate)) // if input date is 'x' and it exists, dont readd
             {
                 return;
             }
@@ -430,9 +430,10 @@ namespace SteinsGAIA
                     {
                         if (pos > 0)
                         {
-                            if (pos > GloDat.DateOrd.Count) { pos = GloDat.DateOrd.Count+1; }
-                            GloDat.DateOrd.Insert(pos-1, buildDate);
+                            if (pos > dateOrd.Count) { pos = dateOrd.Count+1; }
+                            dateOrd.Insert(pos-1, buildDate);
                             Console.WriteLine($"Date inserted at position {pos}");
+                            GloDat.random = buildDate;
                             break;
                         }
                     }
@@ -440,7 +441,13 @@ namespace SteinsGAIA
                 }
             } else
             {
-                int pos = InsertEntryDate(GloDat.DateOrd, buildDate);
+                if (dateOrd.Contains(buildDate)) // if input date after formatting exists, dont read
+                {
+                    GloDat.random = buildDate;
+                    return;
+                }
+                int pos = InsertEntryDate(dateOrd, buildDate) +1;
+                GloDat.random = buildDate;
                 Console.WriteLine($"Date auto inserted at position {pos}");
             }
             return;
@@ -486,20 +493,19 @@ namespace SteinsGAIA
                     PrintConsole(logo);
                     string input;
                     Console.WriteLine("For any input, type '/cancel' to escape without modifying the config.\n");
-                    Console.WriteLine("Add normal or TT event? Enter 'n' or 'tt'.\n(normal = 'okabe walks to the shop', special = btt departure etc)");
+                    Console.WriteLine("Add normal or TT departure event? Enter 'n' or 'tt'.");
                     if ((input = await AskUser("n", "tt", "#/><~()\\*")) == "/cancel") break;
                     string eventBuild;
                     if (input == "n")
                     {
-                        Console.WriteLine("Add an event (for example 'Okabe walks to the shop')");
+                        Console.WriteLine("Label your event (e.g. 'Okabe walks to the shop')");
                         if ((eventBuild = await AskUser("", "", "#/><~()\\*")) == "/cancel") break;
-                        Console.WriteLine("Enter the date for this event (format 'year:month:day:hour:minute', minimum of first entry (year) required)\nExamples: 'x' '2010:08:30' '1975' '-500:01:12:23:59' '-17million");
+                        Console.WriteLine("Enter the date for this event (format 'year:month:day:hour:minute', minimum of 'year' required)\nExamples: 'x' '2010:08:30' '1975' '-500:01:12:23:59' '-17million'");
                         if ((input = await AskUser("", "", "# /><~()\\*")) == "/cancel") break;
-
-                        await InsertNewDate(input);
-                        if (GloDat.random == "/cancel") { GloDat.random = ""; break; }
+                        await InsertDateToList(GloDat.DateOrd, input); if (GloDat.random == "/cancel") { GloDat.random = ""; break; }
+                        string correctInput = GloDat.random;
                         LoadAllLists(GloDat.allLists[4], 4);//updates dates listbox
-                        eventBuild = $"{eventBuild}#{input}";
+                        eventBuild = $"{eventBuild}#{correctInput}";
                         GloDat.Events.Add(eventBuild);
                         LoadAllLists(GloDat.allLists[0], 0);//updates events listbox
                         GloDat.EventCauses.Add("");
@@ -508,10 +514,79 @@ namespace SteinsGAIA
                     }
                     else
                     {
-                        Console.WriteLine("Title your departure");
+                        Console.WriteLine("Label your departure (e.g. 'Suzuha', 'Faris dmail')");
                         if ((eventBuild = await AskUser("", "", "#/><~()\\*")) == "/cancel") break;
+
+                        //scan existing events for departures of the same label, create a list of these but only print a count of them to console ('3 departures of the same entity detected')
+
+                        Console.WriteLine("Enter the date of this departure event (format 'year:month:day:hour:minute', minimum of 'year' required)\nExamples: 'x' '2010:08:30' '1975' '-500:01:12:23:59' '-17million'");
+                        if ((input = await AskUser("", "", "# /><~()\\*")) == "/cancel") break;
+                        string eventArrival = $">{eventBuild}#";
+                        bool btt = true;
+                        string arriveDate = "";
+                        List<string> cloneGloDates = GloDat.DateOrd.ToList();
+                        await InsertDateToList(cloneGloDates, input); if (GloDat.random == "/cancel") { GloDat.random = ""; break; }
+                        string correctInput = GloDat.random;
+                        LoadAllLists(cloneGloDates, 4);//temporarily updates dates listbox with clone
+                        Console.WriteLine("Enter the targeted date of arrival (BTT-arrival dates must be unique between unrelated travel entities)");
+                        for (int a = 0; a < 1; a += 0)
+                        {
+                            List<string> backupClone = cloneGloDates.ToList();
+                            if ((GloDat.random = await AskUser("", "", "# /><~()\\*")) == "/cancel") break;
+                            await InsertDateToList(cloneGloDates, GloDat.random); if (GloDat.random == "/cancel") { break; }
+                            arriveDate = GloDat.random;
+                            Console.WriteLine($"uhh {arriveDate}");
+                            btt = cloneGloDates.FindIndex(ee => ee == arriveDate) < cloneGloDates.FindIndex(ee => ee == correctInput);
+                            if (correctInput == arriveDate)
+                            {
+                                //not invalid if existing same entity uses same btt date
+
+                                Console.WriteLine("Invalid arrival date (same as departure)");
+                                cloneGloDates = backupClone.ToList();
+                                continue;
+                            }
+                            btt = cloneGloDates.FindIndex(ee => ee == arriveDate) < cloneGloDates.FindIndex(ee => ee == correctInput);
+                            if (btt)
+                            {
+                                if (GloDat.BTTDates.Contains(arriveDate))
+                                {
+                                    Console.WriteLine("Invalid arrival date (BTT using an existing BTT arrival date)");
+                                    cloneGloDates = backupClone.ToList();
+                                    continue;
+                                }
+                            }
+                            break;
+                        }
+                        if (GloDat.random == "/cancel") { GloDat.random = ""; break; }
+                        if (btt)
+                        {
+                            if (!GloDat.BTTDates.Contains(arriveDate)) { GloDat.BTTDates.Add(arriveDate); }
+                            int indexBTT = GloDat.BTTDates.FindIndex(ee => ee == arriveDate) + 1;
+                            eventBuild = $"<{eventBuild}#{correctInput}\\{indexBTT}";
+                            eventArrival = $"{eventArrival}{indexBTT}\\";
+                            LoadAllLists(GloDat.allLists[7], 7);//updates btt-dates listbox
+                        } else
+                        {
+                            eventBuild = $"<{eventBuild}#{correctInput}/{arriveDate}";
+                            eventArrival = $"{eventArrival}{arriveDate}/";
+                        }
+                        GloDat.DateOrd.Clear();
+                        foreach (string d in cloneGloDates)
+                        {
+                            GloDat.DateOrd.Add(d);
+                        }
+                        LoadAllLists(GloDat.allLists[4], 4);//updates dates listbox
+                        GloDat.Events.Add(eventBuild);
+                        GloDat.Events.Add(eventArrival);
+                        LoadAllLists(GloDat.allLists[0], 0);//updates events listbox
+
+                        GloDat.EventCauses.Add("");
+                        GloDat.EventCauses.Add("/");
+                        LoadAllLists(GloDat.allLists[1], 1);//updates eventcauses listbox
+                        Console.WriteLine($"Created departure event '{ParseEvent(eventBuild)}' ({eventBuild})\n+created its paired arrival event");
                     }
                 }
+                LoadAllLists(GloDat.allLists[4], 4); //updates dates listbox in case of cancel to revert it
                 panel1.Visible = false;
             }
         }
@@ -558,6 +633,11 @@ namespace SteinsGAIA
         }
 
         private void label9_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void EditTT_Click(object sender, EventArgs e)
         {
 
         }
