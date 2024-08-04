@@ -58,6 +58,9 @@
             this.button3 = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
             this.label9 = new System.Windows.Forms.Label();
+            this.listBox9 = new System.Windows.Forms.ListBox();
+            this.button4 = new System.Windows.Forms.Button();
+            this.label10 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -98,9 +101,9 @@
             this.listBox3.FormattingEnabled = true;
             this.listBox3.HorizontalScrollbar = true;
             this.listBox3.ItemHeight = 20;
-            this.listBox3.Location = new System.Drawing.Point(401, 33);
+            this.listBox3.Location = new System.Drawing.Point(596, 33);
             this.listBox3.Name = "listBox3";
-            this.listBox3.Size = new System.Drawing.Size(189, 244);
+            this.listBox3.Size = new System.Drawing.Size(189, 124);
             this.listBox3.TabIndex = 3;
             // 
             // listBox4
@@ -108,7 +111,7 @@
             this.listBox4.FormattingEnabled = true;
             this.listBox4.HorizontalScrollbar = true;
             this.listBox4.ItemHeight = 20;
-            this.listBox4.Location = new System.Drawing.Point(596, 33);
+            this.listBox4.Location = new System.Drawing.Point(944, 33);
             this.listBox4.Name = "listBox4";
             this.listBox4.Size = new System.Drawing.Size(189, 104);
             this.listBox4.TabIndex = 4;
@@ -118,7 +121,7 @@
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.ForeColor = System.Drawing.SystemColors.MenuHighlight;
-            this.label1.Location = new System.Drawing.Point(592, 8);
+            this.label1.Location = new System.Drawing.Point(940, 8);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(203, 22);
             this.label1.TabIndex = 5;
@@ -153,7 +156,7 @@
             this.label4.AutoSize = true;
             this.label4.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label4.ForeColor = System.Drawing.SystemColors.MenuHighlight;
-            this.label4.Location = new System.Drawing.Point(397, 8);
+            this.label4.Location = new System.Drawing.Point(592, 8);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(189, 22);
             this.label4.TabIndex = 8;
@@ -174,7 +177,7 @@
             this.listBox6.FormattingEnabled = true;
             this.listBox6.HorizontalScrollbar = true;
             this.listBox6.ItemHeight = 20;
-            this.listBox6.Location = new System.Drawing.Point(595, 213);
+            this.listBox6.Location = new System.Drawing.Point(943, 213);
             this.listBox6.Name = "listBox6";
             this.listBox6.Size = new System.Drawing.Size(189, 64);
             this.listBox6.TabIndex = 10;
@@ -196,7 +199,7 @@
             this.label6.AutoSize = true;
             this.label6.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label6.ForeColor = System.Drawing.SystemColors.MenuHighlight;
-            this.label6.Location = new System.Drawing.Point(591, 188);
+            this.label6.Location = new System.Drawing.Point(939, 188);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(110, 22);
             this.label6.TabIndex = 12;
@@ -220,9 +223,9 @@
             this.label7.ForeColor = System.Drawing.SystemColors.MenuHighlight;
             this.label7.Location = new System.Drawing.Point(124, 325);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(184, 22);
+            this.label7.Size = new System.Drawing.Size(161, 22);
             this.label7.TabIndex = 15;
-            this.label7.Text = "Starter Worldline";
+            this.label7.Text = "World Defaults";
             this.label7.Click += new System.EventHandler(this.label7_Click);
             // 
             // listBox8
@@ -259,7 +262,7 @@
             // AddTT
             // 
             this.AddTT.Cursor = System.Windows.Forms.Cursors.Default;
-            this.AddTT.Location = new System.Drawing.Point(401, 276);
+            this.AddTT.Location = new System.Drawing.Point(596, 156);
             this.AddTT.Name = "AddTT";
             this.AddTT.Size = new System.Drawing.Size(99, 35);
             this.AddTT.TabIndex = 18;
@@ -269,7 +272,7 @@
             // AddAF
             // 
             this.AddAF.Cursor = System.Windows.Forms.Cursors.Default;
-            this.AddAF.Location = new System.Drawing.Point(595, 136);
+            this.AddAF.Location = new System.Drawing.Point(943, 136);
             this.AddAF.Name = "AddAF";
             this.AddAF.Size = new System.Drawing.Size(99, 35);
             this.AddAF.TabIndex = 19;
@@ -290,7 +293,7 @@
             // EditTT
             // 
             this.EditTT.Cursor = System.Windows.Forms.Cursors.Default;
-            this.EditTT.Location = new System.Drawing.Point(491, 276);
+            this.EditTT.Location = new System.Drawing.Point(686, 156);
             this.EditTT.Name = "EditTT";
             this.EditTT.Size = new System.Drawing.Size(99, 35);
             this.EditTT.TabIndex = 22;
@@ -301,7 +304,7 @@
             // EditAF
             // 
             this.EditAF.Cursor = System.Windows.Forms.Cursors.Default;
-            this.EditAF.Location = new System.Drawing.Point(685, 136);
+            this.EditAF.Location = new System.Drawing.Point(1033, 136);
             this.EditAF.Name = "EditAF";
             this.EditAF.Size = new System.Drawing.Size(99, 35);
             this.EditAF.TabIndex = 23;
@@ -331,7 +334,7 @@
             // button1
             // 
             this.button1.Cursor = System.Windows.Forms.Cursors.Default;
-            this.button1.Location = new System.Drawing.Point(686, 276);
+            this.button1.Location = new System.Drawing.Point(1034, 276);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(99, 35);
             this.button1.TabIndex = 27;
@@ -341,7 +344,7 @@
             // button2
             // 
             this.button2.Cursor = System.Windows.Forms.Cursors.Default;
-            this.button2.Location = new System.Drawing.Point(596, 276);
+            this.button2.Location = new System.Drawing.Point(944, 276);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(99, 35);
             this.button2.TabIndex = 26;
@@ -351,7 +354,7 @@
             // button3
             // 
             this.button3.Cursor = System.Windows.Forms.Cursors.Default;
-            this.button3.Location = new System.Drawing.Point(641, 389);
+            this.button3.Location = new System.Drawing.Point(1000, 393);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(143, 65);
             this.button3.TabIndex = 28;
@@ -381,12 +384,45 @@
             this.label9.Text = "See console...";
             this.label9.Click += new System.EventHandler(this.label9_Click);
             // 
+            // listBox9
+            // 
+            this.listBox9.FormattingEnabled = true;
+            this.listBox9.HorizontalScrollbar = true;
+            this.listBox9.ItemHeight = 20;
+            this.listBox9.Location = new System.Drawing.Point(401, 33);
+            this.listBox9.Name = "listBox9";
+            this.listBox9.Size = new System.Drawing.Size(189, 244);
+            this.listBox9.TabIndex = 31;
+            // 
+            // button4
+            // 
+            this.button4.Cursor = System.Windows.Forms.Cursors.Default;
+            this.button4.Location = new System.Drawing.Point(443, 276);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(99, 35);
+            this.button4.TabIndex = 33;
+            this.button4.Text = "Edit/View";
+            this.button4.UseVisualStyleBackColor = true;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label10.ForeColor = System.Drawing.SystemColors.MenuHighlight;
+            this.label10.Location = new System.Drawing.Point(397, 8);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(138, 22);
+            this.label10.TabIndex = 32;
+            this.label10.Text = "INFLUENCES";
+            // 
             // CoolForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.MidnightBlue;
-            this.ClientSize = new System.Drawing.Size(797, 474);
+            this.ClientSize = new System.Drawing.Size(1178, 474);
+            this.Controls.Add(this.button4);
+            this.Controls.Add(this.label10);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.listBox6);
@@ -416,9 +452,10 @@
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.AddEv);
+            this.Controls.Add(this.listBox9);
             this.Cursor = System.Windows.Forms.Cursors.Arrow;
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(819, 530);
+            this.MaximumSize = new System.Drawing.Size(1200, 530);
             this.MinimumSize = new System.Drawing.Size(819, 530);
             this.Name = "CoolForm";
             this.Text = "Sim Config";
@@ -463,5 +500,8 @@
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.ListBox listBox9;
+        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Label label10;
     }
 }

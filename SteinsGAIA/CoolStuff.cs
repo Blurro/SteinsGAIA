@@ -3,7 +3,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Ports;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using static System.Windows.Forms.LinkLabel;
 
@@ -29,7 +33,11 @@ public class Program
         public static string exeDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
         public static List<string> EventsSortedByDate = new List<string>();
         public static List<string> EventCausesSortedByDate = new List<string>();
+        public static string removeChars = Regex.Escape(@"#/><|()\*");
+        public static string removeCharsSpace = removeChars + " ";
         public static string random = null;
+        public static Random randomVal = new Random();
+        public static int randomValue = randomVal.Next(0, 100);
     }
 
     public static void PrintConsole(bool logo)
@@ -62,7 +70,7 @@ public class Program
             }
         }
         Console.WriteLine(preMsgCode + "SteinsGAIA : the worldline chronology calculator\u001b[37m");
-        Console.WriteLine("Early build V0.01, generations will appear below here\n");
+        Console.WriteLine("Early build V0.2, generations will appear below here\n");
     }
 
     [STAThread]
@@ -157,13 +165,26 @@ public class Program
         return string.Join(" ", matchingIndices);
     }
 
-    public static string ParseEvent(string ev)
+    public static string ParseEvent(string ev, bool colors)
     {
-        char[] separators = { '<', '>', '(', ')', '#', '\\', '/', '~', '*' };
-        string[] parts = ev.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+        char[] separators = { '<', '>', '(', ')', '#', '\\', '/', '*' };
+        string [] parts = ev.Split('|');
+        List<string> influences = new List<string>();
+        if (parts.Length > 0)
+        {
+            for (int i = 1; i < parts.Length; i++) //add all skipping first
+            {
+                influences.Add(parts[i]);
+            }
+        }
+        string BTTInfluenceAddon = string.Join(", ", influences);
+        parts = parts[0].Split(separators, StringSplitOptions.RemoveEmptyEntries);
         string evText = null;
         GloDat.evLabel = parts[0];
         GloDat.evDate = parts[1];
+
+        int[] rgb = GenerateColorFromText($"{GloDat.evLabel}{GloDat.randomValue}"); //epic colors wooooo
+
         if (ev.Contains("<"))
         {
             if (ev.Contains("\\"))
@@ -174,7 +195,7 @@ public class Program
             if (ev.Contains("/"))
             {
                 GloDat.evType = "fttdep";
-                evText = "FTT-" + parts[0] + " leaves from date " + parts[1] + " to date " + parts[2];
+                evText = $"FTT-{parts[0]} leaves from date {parts[1]} to date {parts[2]}";
             }
         } else if (ev.Contains(">"))
         {
@@ -190,12 +211,46 @@ public class Program
                 tt = "FTT-";
                 GloDat.evType = "fttarv";
             }
-            evText = tt + parts[0] + " arrives on date " + parts[1];
+            evText = $"{tt}{parts[0]} arrives on date {parts[1]}{(BTTInfluenceAddon.Length > 0 ? $" - Influenced by event{(BTTInfluenceAddon.Length > 2 ? "s" : "")} {BTTInfluenceAddon}" : "")}";
         } else
         {
             GloDat.evType = "norm";
             evText = parts[0] + " on date " + parts[1];
         }
+        if (colors)
+        {
+            return $"\u001b[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m{evText}\u001b[37m";
+        }
         return evText;
+    }
+
+    public static int[] GenerateColorFromText(string input)
+    {
+        // Compute the hash of the input string
+        byte[] hashBytes = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(input));
+
+        // Extract three numbers from the hash
+        int r = hashBytes[0];
+        int g = hashBytes[1];
+        int b = hashBytes[2];
+
+        // Ensure at least one of the numbers is >= 100
+        int minim = 200;
+        if (r < minim && g < minim && b < minim)
+        {
+            if (r > g && r > b)
+                r = minim;
+            else if (g > r && g > b)
+                g = minim;
+            else
+                b = minim;
+        }
+
+        // Ensure that no number exceeds 255 after adjustment
+        r = Math.Min(r, 255);
+        g = Math.Min(g, 255);
+        b = Math.Min(b, 255);
+
+        return new int[] { r, g, b };
     }
 }
