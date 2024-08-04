@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -139,11 +140,9 @@ namespace SteinsGAIA
 
         private void UpdWL_Click(object sender, EventArgs e)
         {
-            if (panel1.Visible == true)
-            {
-                return;
-            }
-            GloDat.randomValue = GloDat.randomVal.Next(0, 100);
+            if (panel1.Visible == true) { return; }
+            Console.Clear(); Console.WriteLine("\x1b[3J");
+            GloDat.randomValue = GloDat.randomVal.Next(0, 999);
             bool doGen = true;
             List<string> CurrentWorldLine = new List<string>();
             if (string.IsNullOrWhiteSpace(textBox1.Text)) // if the textbox is empty rather than emptying list it restores list to textbox
@@ -213,6 +212,7 @@ namespace SteinsGAIA
 
                 bool logo = false;
                 PrintConsole(logo);
+                Console.WriteLine($"\u001b[38;2;30;30;40m\u001b[60C\u001b[2AColor seed {GloDat.randomValue}\u001b[37m\n");
                 string wlStart = GloDat.WLBegin[0];
                 List<string> AllWorldLines = new List<string>();
                 List<int> BTTActiveInfluences = new List<int>();
@@ -225,7 +225,7 @@ namespace SteinsGAIA
                     endGen = true; // by default the generation of new WLs will end after this one and the future will be allowed to continue, until any type of WL ending event says otherwise.
                     wlCounter++; // before this line, wlCounter is 0, we begin at 1 for WL1
                     AllWorldLines.Add("-"); // every 'WL(num):' is == to a '-' in this code version
-                    Console.WriteLine("WL" + wlCounter + ":"); // simply prints "WL1:" increasing the number for every new worldline
+                    Console.WriteLine($"\x1b[3mWL{wlCounter}:\x1b[0m"); // simply prints "WL1:" increasing the number for every new worldline
 
                     // formatting - each rule will be one chunk of code, no empty lines between them, and separated by these // RULE comments
 
@@ -249,7 +249,7 @@ namespace SteinsGAIA
                             string parsed = ParseEvent(CurrentWorldLine[i], true);
                             if (GloDat.evType == "bttdep")
                             {
-                                Console.WriteLine(parsed + " (no change no shift)"); // parsing an event will also return a readable sentence version rather than code
+                                Console.WriteLine(parsed + " \u001b[38;2;30;30;40m(no change no shift)\u001b[37m"); // parsing an event will also return a readable sentence version rather than code
                             } else
                             {
                                 Console.WriteLine(parsed);
@@ -294,20 +294,22 @@ namespace SteinsGAIA
                             string BTTInfluenceAddon = string.Join("", BTTActiveInfluences.ConvertAll(item => $"|{item}"));
 
                             // if its arrival doesnt exist on wl then end after departure
-                            if (CurrentWorldLine.IndexOf(GloDat.Events[GloDat.Events.IndexOf(GloDat.EventsSortedByDate[i]) + 1] + BTTInfluenceAddon) == -1)
+                            ParseEvent(GloDat.EventsSortedByDate[i], false);
+                            string getEv = $">{GloDat.evLabel}#{GloDat.evBttDate}\\";
+                            //foreach (string aa in GloDat.Events) { if (aa.Split('*')[0] == getEv) { getEv = aa; } }   // if theres something in between the bttarrivaldate and influences this would fix but dont think i'll need it
+                            if (CurrentWorldLine.IndexOf(getEv + BTTInfluenceAddon) == -1)
                             {
                                 CurrentWorldLine.Add(GloDat.EventsSortedByDate[i]); Console.WriteLine(parsed); // add btt depart
 
-                                string nextStart = GloDat.Events[GloDat.Events.IndexOf(GloDat.EventsSortedByDate[i]) + 1];
-                                ParseEvent(nextStart, false);
+                                ParseEvent(getEv, false);
 
-                                wlStart = nextStart + BTTInfluenceAddon;
+                                wlStart = getEv + BTTInfluenceAddon;
                                 endGen = false;
                                 Console.WriteLine();
                                 break;
                             } else
                             {
-                                CurrentWorldLine.Add(GloDat.EventsSortedByDate[i]); Console.WriteLine(parsed + " (no change no shift)"); // add btt depart plus no change no shift comment
+                                CurrentWorldLine.Add(GloDat.EventsSortedByDate[i]); Console.WriteLine(parsed + " \u001b[38;2;30;30;40m(no change no shift)\u001b[37m"); // add btt depart plus no change no shift comment
                             }
                         }
                         // RULE FOUR:
@@ -315,7 +317,7 @@ namespace SteinsGAIA
                     //Console.WriteLine("aaa " + wlStart);
 
                     foreach (string ev in CurrentWorldLine) { AllWorldLines.Add(ev); } //add the fully created current WL to our list of all of them
-                    if (wlCounter == 6) // just in case i goof up and make an infinite loop ive put a cap here
+                    if (wlCounter == 30) // just in case i goof up and make an infinite loop ive put a cap here
                     {
                         endGen = true;
                     }
@@ -393,6 +395,7 @@ namespace SteinsGAIA
         {
             if (panel1.Visible == false)
             {
+                Console.Clear(); Console.WriteLine("\x1b[3J");
                 for (int i = 0; i < 1; i++)
                 {
                     panel1.Visible = true;
@@ -541,6 +544,7 @@ namespace SteinsGAIA
         {
             if (panel1.Visible == false)
             {
+                Console.Clear(); Console.WriteLine("\x1b[3J");
                 for (int i = 0; i < 1; i++)
                 {
                     panel1.Visible = true;
@@ -657,13 +661,16 @@ namespace SteinsGAIA
                             break;
                         }
                         GloDat.Events.Add(eventBuild);
-                        GloDat.Events.Add(eventArrival);
-                        LoadAllLists(GloDat.allLists[0], 0);//updates events listbox
-
                         GloDat.EventCauses.Add("");
-                        GloDat.EventCauses.Add("/");
+                        Console.WriteLine($"Created departure event '{ParseEvent(eventBuild, true)}' ({eventBuild})");
+                        if (!GloDat.Events.Contains(eventArrival))
+                        {
+                            Console.WriteLine("+created its paired arrival event");
+                            GloDat.Events.Add(eventArrival);
+                            GloDat.EventCauses.Add("/");
+                        }
+                        LoadAllLists(GloDat.allLists[0], 0);//updates events listbox
                         LoadAllLists(GloDat.allLists[1], 1);//updates eventcauses listbox
-                        Console.WriteLine($"Created departure event '{ParseEvent(eventBuild, true)}' ({eventBuild})\n+created its paired arrival event");
                     }
                 }
                 LoadAllLists(GloDat.allLists[4], 4); //updates dates listbox in case of cancel to revert it

@@ -26,6 +26,7 @@ public class Program
         public static List<string> ListTags = new List<string> { "###events", "###eventcauses", "###tt-entities", "###AttractorFields", "###dateOrder", "###rs-users", "###Worldline1", "###btt-arrival-dates" };
         public static List<List<string>> allLists = new List<List<string>> { Events, EventCauses, TTEntities, AttFields, DateOrd, RSUsers, WLBegin, BTTDates };
         public static string evDate = null;
+        public static string evBttDate = null;
         public static string evType = null;
         public static string evLabel = null;
         public static List<int> evCauses = new List<int>();
@@ -189,8 +190,9 @@ public class Program
         {
             if (ev.Contains("\\"))
             {
+                GloDat.evBttDate = parts[2];
                 GloDat.evType = "bttdep";
-                evText = "BTT-" + parts[0] + " leaves from date " + parts[1] + " to date " + GloDat.BTTDates[int.Parse(parts[2]) - 1];
+                evText = "BTT-" + parts[0] + " leaves from date " + parts[1] + " to date " + GloDat.BTTDates[int.Parse(GloDat.evBttDate) - 1];
             }
             if (ev.Contains("/"))
             {
@@ -226,7 +228,6 @@ public class Program
 
     public static int[] GenerateColorFromText(string input)
     {
-        // Compute the hash of the input string
         byte[] hashBytes = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(input));
 
         // Extract three numbers from the hash
@@ -234,7 +235,7 @@ public class Program
         int g = hashBytes[1];
         int b = hashBytes[2];
 
-        // Ensure at least one of the numbers is >= 100
+        // Ensure at least one of the numbers has a min brightness
         int minim = 200;
         if (r < minim && g < minim && b < minim)
         {
