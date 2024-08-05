@@ -2,6 +2,7 @@ using SteinsGAIA;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.IO.Ports;
 using System.Reflection;
@@ -29,6 +30,7 @@ public class Program
         public static string evBttDate = null;
         public static string evType = null;
         public static string evLabel = null;
+        public static string evColor = null;
         public static List<int> evCauses = new List<int>();
         public static List<int> evPreventatives = new List<int>();
         public static string exeDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
@@ -39,6 +41,7 @@ public class Program
         public static string random = null;
         public static Random randomVal = new Random();
         public static int randomValue = randomVal.Next(0, 100);
+        public static string cancelCode = "/c";
     }
 
     public static void PrintConsole(bool logo)
@@ -70,7 +73,7 @@ public class Program
                 }
             }
         }
-        Console.WriteLine(preMsgCode + "SteinsGAIA : the worldline chronology calculator\u001b[37m");
+        Console.WriteLine(preMsgCode + "SteinsGAIA : the world line chronology calculator\u001b[37m");
         Console.WriteLine("Early build V0.2, generations will appear below here\n");
     }
 
@@ -169,7 +172,7 @@ public class Program
     public static string ParseEvent(string ev, bool colors)
     {
         char[] separators = { '<', '>', '(', ')', '#', '\\', '/', '*' };
-        string [] parts = ev.Split('|');
+        string[] parts = ev.Split(new [] {'|'}, StringSplitOptions.RemoveEmptyEntries);
         List<string> influences = new List<string>();
         if (parts.Length > 0)
         {
@@ -213,15 +216,38 @@ public class Program
                 tt = "FTT-";
                 GloDat.evType = "fttarv";
             }
-            evText = $"{tt}{parts[0]} arrives on date {parts[1]}{(BTTInfluenceAddon.Length > 0 ? $" - Influenced by event{(BTTInfluenceAddon.Length > 2 ? "s" : "")} {BTTInfluenceAddon}" : "")}";
+            evText = $"{tt}{parts[0]} arrives on date {parts[1]}";
+            if (colors) {
+                int r2 = rgb[0] / 2;
+                int g2 = rgb[1] / 2;
+                int b2 = rgb[2] / 2;
+                if (r2 > g2 && r2 > b2)
+                {
+                    g2 += (r2 - g2) / 2;
+                    b2 += (r2 - b2) / 2;
+                }
+                else if (g2 > r2 && g2 > b2)
+                {
+                    r2 += (g2 - r2) / 2;
+                    b2 += (g2 - b2) / 2;
+                }
+                else
+                {
+                    g2 += (b2 - g2) / 2;
+                    r2 += (b2 - r2) / 2;
+                }
+                evText += $"\u001b[38;2;{r2};{g2};{b2}m"; // convoluted lil thing for simple detail lol
+            };
+            evText += $"{(BTTInfluenceAddon.Length > 0 ? $" - Influenced by event{(BTTInfluenceAddon.Length > 2 ? "s" : "")} {BTTInfluenceAddon}" : "")}";
         } else
         {
             GloDat.evType = "norm";
             evText = parts[0] + " on date " + parts[1];
         }
+        GloDat.evColor = $"\u001b[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m";
         if (colors)
         {
-            return $"\u001b[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m{evText}\u001b[37m";
+            return $"{GloDat.evColor}{evText}\u001b[37m";
         }
         return evText;
     }

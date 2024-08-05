@@ -258,6 +258,7 @@
             this.EditCause.TabIndex = 17;
             this.EditCause.Text = "Edit/View";
             this.EditCause.UseVisualStyleBackColor = true;
+            this.EditCause.Click += new System.EventHandler(this.EditCause_Click);
             // 
             // AddTT
             // 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -112,6 +113,8 @@ namespace SteinsGAIA
 
         private void DateSortEvents()
         {
+            GloDat.EventsSortedByDate.Clear(); // cant believe i forgot to add this for so long, was causing issues without lol
+            GloDat.EventCausesSortedByDate.Clear();
             for (int d = 0; d < GloDat.DateOrd.Count; d++)
             {
                 for (int e = 0; e < GloDat.Events.Count; e++)
@@ -120,7 +123,6 @@ namespace SteinsGAIA
 
                     if (GloDat.evDate != GloDat.DateOrd[d] || GloDat.EventsSortedByDate.Contains(GloDat.Events[e]))
                     {
-                        //Console.WriteLine(GloDat.DateOrd[d]); // debug print
                         continue;
                     }
 
@@ -128,6 +130,10 @@ namespace SteinsGAIA
                     GloDat.EventCausesSortedByDate.Add(GloDat.EventCauses[e]);
                 }
             }
+            //Console.WriteLine(string.Join(" | ", GloDat.EventsSortedByDate));
+            //Console.WriteLine(string.Join(" | ", GloDat.DateOrd));
+            //Console.WriteLine("sorted");
+            //Console.ReadKey();
             //foreach (var pair in GloDat.EventsSortedByDate)
             //{
             //    Console.WriteLine(pair);
@@ -249,7 +255,7 @@ namespace SteinsGAIA
                             string parsed = ParseEvent(CurrentWorldLine[i], true);
                             if (GloDat.evType == "bttdep")
                             {
-                                Console.WriteLine(parsed + " \u001b[38;2;30;30;40m(no change no shift)\u001b[37m"); // parsing an event will also return a readable sentence version rather than code
+                                Console.WriteLine(parsed + " \u001b[38;2;30;30;40m(in holding)\u001b[37m"); // parsing an event will also return a readable sentence version rather than code
                             } else
                             {
                                 Console.WriteLine(parsed);
@@ -267,6 +273,9 @@ namespace SteinsGAIA
                     
                     for (int i = CustomIndexOf(GloDat.EventsSortedByDate, wlStart); i < GloDat.EventsSortedByDate.Count; i++) // 1 loop = 1 event checked. starting from events with the same date as the event in var 'wlStart', likely the BTT arrival event.
                     {
+                        //Console.WriteLine($"{GloDat.evLabel} !! {wlStart}, {CustomIndexOf(GloDat.EventsSortedByDate, wlStart)}");
+                        LoadAllLists(GloDat.allLists[4], 4);//updates dates listbox
+
                         if (CustomIndexOf(CurrentWorldLine, GloDat.EventsSortedByDate[i]) != -1) { continue; } // if the event we are checking already exists on the wl, skip to next event
                         bool addEv = AddEventOrNot(i, CurrentWorldLine); // goes to a function checking if the current worldline contains causes or preventatives for the event in question, returns true (=it should be added) or false
                         string parsed = ParseEvent(GloDat.EventsSortedByDate[i], true);
@@ -278,12 +287,11 @@ namespace SteinsGAIA
                         // RULE THREE: if the event being added is a BTT departure then this spells THE END of the current worldline, but ONLY IF [its identical arrival exists on the current worldline] OR [its arrival + all current events prior to its arrival do NOT identically match the beginning timeline of ANY prior active worldline, only scanning backwards until the starting worldline of the current AF that was NOT reached via BTT]
                         // tl;dr worldline ends, else no change no shift
 
-                        // FIX THIS TO BE, IF THE ARRIVAL + ALL IDENTICAL EVENTS PRIOR ARRIVAL (AND ONLY THESE, NO LESS NO MORE) HAVE EXISTED ON A PRIOR GENERATED WORLDLINE, THEN IT CAN BE SKIPPED
                         if (addEv && GloDat.evType == "bttdep")
                         {
                             BTTActiveInfluences.Clear();
                             //if the BTT has a travel entity (meaning it changes constantly along a worldline) and has no set influences, by default everything is an influence to it
-                            if (GloDat.TTEntities.Contains(GloDat.evLabel)) // reminder to add a check for its influences too
+                            if (GloDat.TTEntities.Contains(GloDat.evLabel)) // reminder to add a check for its influences too - default rn is that itll act as if everything prior is an influence if theres an entity
                             {
                                 foreach (string ev in CurrentWorldLine)
                                 {
@@ -292,34 +300,107 @@ namespace SteinsGAIA
                                 BTTActiveInfluences.Sort();
                             }
                             string BTTInfluenceAddon = string.Join("", BTTActiveInfluences.ConvertAll(item => $"|{item}"));
+                            if (BTTInfluenceAddon != "")
+                            {
+                                BTTInfluenceAddon += "|";
+                            }
 
-                            // if its arrival doesnt exist on wl then end after departure
+                            int departResult = 0;
                             ParseEvent(GloDat.EventsSortedByDate[i], false);
                             string getEv = $">{GloDat.evLabel}#{GloDat.evBttDate}\\";
                             //foreach (string aa in GloDat.Events) { if (aa.Split('*')[0] == getEv) { getEv = aa; } }   // if theres something in between the bttarrivaldate and influences this would fix but dont think i'll need it
-                            if (CurrentWorldLine.IndexOf(getEv + BTTInfluenceAddon) == -1)
-                            {
-                                CurrentWorldLine.Add(GloDat.EventsSortedByDate[i]); Console.WriteLine(parsed); // add btt depart
 
-                                ParseEvent(getEv, false);
-
-                                wlStart = getEv + BTTInfluenceAddon;
-                                endGen = false;
-                                Console.WriteLine();
-                                break;
-                            } else
+                            CurrentWorldLine.Add(GloDat.EventsSortedByDate[i]);//add it because we need it on the worldline for next part & itll get added either way (console msg add is later)
+                            if (CurrentWorldLine.IndexOf(getEv + BTTInfluenceAddon) == -1) //if arrival (with same influences therefore identical entity) DOES NOT exist on wl, check 2nd condition before deciding to end WL
                             {
-                                CurrentWorldLine.Add(GloDat.EventsSortedByDate[i]); Console.WriteLine(parsed + " \u001b[38;2;30;30;40m(no change no shift)\u001b[37m"); // add btt depart plus no change no shift comment
+                                //this is after the 'OR' in rule 3 description, we search prior worldlines now (ignoring the AF thing cus dont have em yet)
+                                List<string> currentUpToNextArrive = new List<string> { "-" };
+                                ParseEvent(GloDat.EventsSortedByDate[i], false);
+                                //Console.WriteLine(GloDat.EventsSortedByDate[i] + " ????");
+                                int dateReadTo = GloDat.DateOrd.IndexOf(GloDat.BTTDates[int.Parse(GloDat.evBttDate) - 1]);
+                                for (int ja = 0; ja < CurrentWorldLine.Count; ja++)
+                                {
+                                    ParseEvent(CurrentWorldLine[ja], false);
+                                    //currentUpToNextArrive.Add(CurrentWorldLine[ja]);
+                                    //Console.WriteLine($"huh {GloDat.DateOrd.IndexOf(GloDat.evDate)} and {dateReadTo}");
+                                    int dateCheck = GloDat.DateOrd.IndexOf(GloDat.evDate);
+                                    //Console.WriteLine($"WHAT {dateCheck} < {dateReadTo} w {CurrentWorldLine[ja]}");
+                                    if (dateCheck < dateReadTo)
+                                    {
+                                        currentUpToNextArrive.Add(CurrentWorldLine[ja]);
+                                    }
+                                    else if (dateCheck == dateReadTo)
+                                    {
+                                        //Console.WriteLine($"HOW {dateCheck} == {dateReadTo} w {CurrentWorldLine[ja]}");
+                                        if (CurrentWorldLine[ja] == getEv + BTTInfluenceAddon) // just so we dont add events that happen on the same date as btt arrival
+                                        {
+                                            currentUpToNextArrive.Add(CurrentWorldLine[ja]);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        currentUpToNextArrive.Add(getEv + BTTInfluenceAddon); // add it onto the end of this 'before this date' worldline
+                                        break;
+                                    } // events are in order of date so if we find one >greater we break early
+                                }
+                                int dashCount = AllWorldLines.Count(item => item == "-") - 2; // start on the previous-to-current worldline
+                                bool identicalPreviousWL = false;
+                                for (int je = dashCount; je > -1; je--)
+                                {
+                                    List<string> prevWLSegment = GetWorldlineSegment(AllWorldLines, je, dateReadTo, getEv + BTTInfluenceAddon);
+                                    //Console.WriteLine(string.Join(":", currentUpToNextArrive));
+                                    //Console.WriteLine($"Worldline{je + 1}: checking {getEv + BTTInfluenceAddon}");
+                                    //Console.WriteLine(string.Join(Environment.NewLine, prevWLSegment));
+                                    identicalPreviousWL = currentUpToNextArrive.Count <= prevWLSegment.Count && !currentUpToNextArrive.Where((s, ie) => s != prevWLSegment[ie]).Any();
+                                    if (identicalPreviousWL)
+                                    {
+                                        departResult = 2;
+                                        Console.WriteLine(parsed + $" \u001b[38;2;30;30;40m(no change no shift - result on WL{je+1})\u001b[37m"); // add btt no change no shift comment (was already added before the if)
+                                        if (CustomIndexOf(CurrentWorldLine, getEv) == -1)
+                                        {
+                                            departResult = 3;
+                                            Console.WriteLine("extremely rare so im keeping this msg for now");
+                                        }
+                                        break;
+                                    }
+                                }
+                                if (!identicalPreviousWL)
+                                {
+                                    departResult = 0;
+                                    Console.WriteLine(parsed); // adds btt depart msg (code already added to wl before this if)
+
+                                    ParseEvent(getEv, false);
+
+                                    wlStart = getEv + BTTInfluenceAddon;
+                                    endGen = false;
+                                    Console.WriteLine();
+                                    break; // if neither condition for no 'change no shift' is met, exit loop and end the current worldline
+                                }
+                            }
+                            else
+                            {
+                                departResult = 1;
+                                Console.WriteLine(parsed + " \u001b[38;2;30;30;40m(no change no shift)\u001b[37m"); // add btt no change no shift comment (was already added before the if)
+                            }
+
+                            // RULE FOUR: any BTT that departs without ending the worldline (AND if its scheduled arrival exists) will be put into 'holding', then if a BTT e.g. 'entity1' departs from the same worldline this holding occurs, and entity1 arrives to a point prior to the held-BTT's arrival (thus removing its clone), the held BTT will now come out of holding to arrive AND be anchored to entity1's btt-arrival date
+
+                            // departResults
+                            // 0: departure valid, goes to the past. (wont reach this)
+                            // 1: identical arrival exists on the worldline. (goes into holding)
+                            // 2: non identical arrival exists, identical result on previous worldline. (goes into holding)
+                            // 3: no arrival exists, identical result on previous worldline (rare, only known case is the first dmail in beta, skip it)
+                            if (departResult == 1 || departResult == 2)
+                            {
+
                             }
                         }
-                        // RULE FOUR:
                     }
-                    //Console.WriteLine("aaa " + wlStart);
-
                     foreach (string ev in CurrentWorldLine) { AllWorldLines.Add(ev); } //add the fully created current WL to our list of all of them
-                    if (wlCounter == 30) // just in case i goof up and make an infinite loop ive put a cap here
+                    if (wlCounter == 16) // just in case i goof up and make an infinite loop ive put a cap here
                     {
                         endGen = true;
+                        Console.WriteLine("reached generation cap"); continue;
                     }
                     if (endGen)
                     {
@@ -483,7 +564,7 @@ namespace SteinsGAIA
                 Console.WriteLine($"Date '{buildDate}' unable to be placed automatically\nPlease enter a #num of the DATES list to insert this");
                 for (int i = 0; i < 1; i+=0)
                 {
-                    if ((GloDat.random = await AskUser("", "", GloDat.removeCharsSpace)) == "/cancel") return;
+                    if ((GloDat.random = await AskUser("", "", GloDat.removeCharsSpace)) == GloDat.cancelCode) return;
                     if (int.TryParse(GloDat.random, out var pos))
                     {
                         if (pos > 0)
@@ -495,7 +576,7 @@ namespace SteinsGAIA
                             break;
                         }
                     }
-                    Console.WriteLine("Not a valid position, retry or /cancel");
+                    Console.WriteLine($"Not a valid position, retry or {GloDat.cancelCode}");
                 }
             } else
             {
@@ -551,18 +632,18 @@ namespace SteinsGAIA
                     bool logo = false;
                     PrintConsole(logo);
                     string input;
-                    Console.WriteLine("For any input, type '/cancel' to escape without modifying the config.\n");
+                    Console.WriteLine($"For any input, type '{GloDat.cancelCode}' to escape without modifying the config.\n");
                     Console.WriteLine("Add normal or TT departure event? Enter 'n' or 'tt'.");
-                    if ((input = await AskUser("n", "tt", GloDat.removeCharsSpace)) == "/cancel") break;
+                    if ((input = await AskUser("n", "tt", GloDat.removeCharsSpace)) == GloDat.cancelCode) break;
                     string eventBuild;
                     if (input == "n")
                     {
                         Console.WriteLine("Label your event (e.g. 'Okabe walks to the shop')");
-                        if ((eventBuild = await AskUser("", "", GloDat.removeChars)) == "/cancel") break;
+                        if ((eventBuild = await AskUser("", "", GloDat.removeChars)) == GloDat.cancelCode) break;
                         Console.WriteLine("Enter the date for this event (format 'year:month:day:hour:minute', minimum of 'year' required)\nExamples: 'x' '2010:08:30' '1975' '-500:01:12:23:59' '-17million'");
-                        if ((input = await AskUser("", "", GloDat.removeCharsSpace)) == "/cancel") break;
+                        if ((input = await AskUser("", "", GloDat.removeCharsSpace)) == GloDat.cancelCode) break;
 
-                        await InsertDateToList(GloDat.DateOrd, input); if (GloDat.random == "/cancel") { GloDat.random = ""; break; }
+                        await InsertDateToList(GloDat.DateOrd, input); if (GloDat.random == GloDat.cancelCode) { GloDat.random = ""; break; }
                         string correctInput = GloDat.random;
 
                         LoadAllLists(GloDat.allLists[4], 4);//updates dates listbox
@@ -582,7 +663,7 @@ namespace SteinsGAIA
                     else
                     {
                         Console.WriteLine("Label your departure (e.g. 'Suzuha', 'Faris dmail')");
-                        if ((eventBuild = await AskUser("", "", GloDat.removeChars)) == "/cancel") break;
+                        if ((eventBuild = await AskUser("", "", GloDat.removeChars)) == GloDat.cancelCode) break;
                         List<string> matchEntityListArrivals = new List<string>();
                         //scan existing events for departures of the same label, create a list of its used btt arrival dates
                         foreach (string eve in GloDat.Events)
@@ -601,20 +682,20 @@ namespace SteinsGAIA
                             Console.WriteLine($"Found {matchEntityListArrivals.Count} used BTT arrivals by the entity '{eventBuild}': {string.Join(", ", matchEntityListArrivals.ConvertAll(item => $"'{item}'"))}");
                         }
                         Console.WriteLine("Enter the date of this departure event (format 'year:month:day:hour:minute', minimum of 'year' required)\nExamples: 'x' '2010:08:30' '1975' '-500:01:12:23:59' '-17million'");
-                        if ((input = await AskUser("", "", GloDat.removeCharsSpace)) == "/cancel") break;
+                        if ((input = await AskUser("", "", GloDat.removeCharsSpace)) == GloDat.cancelCode) break;
                         string eventArrival = $">{eventBuild}#";
                         bool btt = true;
                         string arriveDate = "";
                         List<string> cloneGloDates = GloDat.DateOrd.ToList();
-                        await InsertDateToList(cloneGloDates, input); if (GloDat.random == "/cancel") { GloDat.random = ""; break; }
+                        await InsertDateToList(cloneGloDates, input); if (GloDat.random == GloDat.cancelCode) { GloDat.random = ""; break; }
                         string correctInput = GloDat.random;
                         LoadAllLists(cloneGloDates, 4);//temporarily updates dates listbox with clone
                         Console.WriteLine("Enter the targeted date of arrival (BTT-arrival dates must be unique between unrelated travel entities)");
                         for (int a = 0; a < 1; a += 0)
                         {
                             List<string> backupClone = cloneGloDates.ToList();
-                            if ((GloDat.random = await AskUser("", "", GloDat.removeCharsSpace)) == "/cancel") break;
-                            await InsertDateToList(cloneGloDates, GloDat.random); if (GloDat.random == "/cancel") { break; }
+                            if ((GloDat.random = await AskUser("", "", GloDat.removeCharsSpace)) == GloDat.cancelCode) break;
+                            await InsertDateToList(cloneGloDates, GloDat.random); if (GloDat.random == GloDat.cancelCode) { break; }
                             arriveDate = GloDat.random;
 
                             btt = cloneGloDates.FindIndex(ee => ee == arriveDate) < cloneGloDates.FindIndex(ee => ee == correctInput);
@@ -636,7 +717,7 @@ namespace SteinsGAIA
                             }
                             break;
                         }
-                        if (GloDat.random == "/cancel") { GloDat.random = ""; break; }
+                        if (GloDat.random == GloDat.cancelCode) { GloDat.random = ""; break; }
                         if (btt)
                         {
                             if (!GloDat.BTTDates.Contains(arriveDate)) { GloDat.BTTDates.Add(arriveDate); }
@@ -686,11 +767,12 @@ namespace SteinsGAIA
                 {
                     while (Console.KeyAvailable) { Console.ReadKey(true); } // Clears input buffer
                     string input = Console.ReadLine();
+                    string unmodifInput = input;
 
-                    if (input == "/cancel")
+                    if (input == GloDat.cancelCode)
                     {
                         Console.WriteLine("Cancelled action");
-                        return "/cancel";
+                        return GloDat.cancelCode;
                     }
                     input = Regex.Replace(input.Trim(), $"[{removeChars}]", "");
                     if (option1 != "")
@@ -705,7 +787,7 @@ namespace SteinsGAIA
                         }
                         else
                         {
-                            Console.WriteLine($"\u001b[A\u001b[30m{input}\u001b[37m\u001b[A"); //blacks out input and returns to the line
+                            Console.WriteLine($"\u001b[A\u001b[30m{unmodifInput}\u001b[37m\u001b[A"); //blacks out input and returns to the line
                         }
                     } else if (input.Trim() == "")
                     {
@@ -743,6 +825,77 @@ namespace SteinsGAIA
             }
 
             return -1; // Return -1 if not found
+        }
+
+        static List<string> GetWorldlineSegment(List<string> bigList, int index, int dateReadTo, string keepBTTArrival)
+        {
+            List<string> segment = new List<string>();
+            int currentIndex = -1; // Track the current segment index
+
+            for (int i = 0; i < bigList.Count; i++)
+            {
+                if (bigList[i] == "-")
+                {
+                    currentIndex++;
+                    if (currentIndex > index) // If we've gone past the desired segment
+                        break;
+                    segment.Clear();
+                    segment.Add(bigList[i]);
+                    continue;
+                }
+                ParseEvent(bigList[i], false);
+                if (currentIndex == index && (GloDat.DateOrd.IndexOf(GloDat.evDate) < dateReadTo || bigList[i] == keepBTTArrival)) // dont add events of the same date, will conflict if listed as an earlier dated event
+                {
+                    segment.Add(bigList[i]);
+                }
+            }
+
+            return segment;
+        }
+
+        private void EditCause_Click(object sender, EventArgs e)
+        {
+            if (panel1.Visible == false)
+            {
+                Console.Clear(); Console.WriteLine("\x1b[3J");
+                for (int i = 0; i < 1; i++)
+                {
+                    panel1.Visible = true;
+                    bool logo = false;
+                    PrintConsole(logo);
+                    Console.WriteLine("Here you can choose an event, and set the +cause or -preventative!\nIf an event has no +causes, you may add it to the 'World Defaults' list (type its number in the box)\nand it will happen by default, until prevented.\nBTT departures and AF endpoints cannot have -preventatives, these must be prevented by creating an event that\ndestroys their cause event (nullifying its causal ability for all events happening after it)\n\nCauses: If an event has 2 causes, just one needs to exist to cause it.\nSetting an arrival of the same TT entity as a cause (max 1) will recognise it's continuing the same journey."); //inside this for loop below this line is new, everything else is the template for all buttons
+
+                    int n = 0;
+                    foreach (string ev in GloDat.Events)
+                    {
+                        n++;
+                        string gap = $"\u001b[30m{n}  \u001b[37m";
+                        Console.WriteLine($"{n}) {ParseEvent(ev, true)}");
+                        if (GloDat.EventCauses[n - 1] == "/")
+                        {
+                            Console.WriteLine($"{gap}\u001b[38;2;45;45;60m---\u001b[37m");
+                        }
+                        else if (GloDat.EventCauses[n - 1] != "")
+                        {
+                            List<string> causeSplit = Regex.Split(GloDat.EventCauses[n - 1], @"(?<=\d)(?=[+\-|])|(?<=[+\-|])(?=\d)").Where(s => !string.IsNullOrEmpty(s)).ToList();
+                            for (int j = 0; j < causeSplit.Count; j++)
+                            {
+                                if (causeSplit[j] != "+" && causeSplit[j] != "-" && causeSplit[j] != "/")
+                                {
+                                    ParseEvent(GloDat.Events[int.Parse(causeSplit[j].Split('|')[0]) - 1], false);
+                                    causeSplit[j] = $"{GloDat.evColor}{causeSplit[j]}\u001b[37m";
+                                }
+                            }
+                            Console.WriteLine($"{gap}{string.Join("", causeSplit)}");
+                        } else
+                        {
+                            Console.WriteLine($"{gap}\u001b[38;2;45;45;60m(none)\u001b[37m");
+                        }
+                    }
+                    Console.WriteLine($"\nEnter the #num of event you'd like to set a cause for! For any input, enter '{GloDat.cancelCode}' to cancel");
+                }
+                panel1.Visible = false;
+            }
         }
     }
 }
