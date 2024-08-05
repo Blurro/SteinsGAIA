@@ -58,7 +58,7 @@ namespace SteinsGAIA
                 //if (new[] { 3, 4, 5 }.Contains(lisNum)) {listBoxes[lisNum].Items.Add(s);} else 
                 if (lisNum == 6)
                 {
-                    listBoxes[lisNum].Items.Add("[" + (GloDat.Events.IndexOf(s) + 1) + "] " + ParseEvent(s, false));
+                    listBoxes[lisNum].Items.Add("[" + (GloDat.Events.IndexOf(s) + 1) + "] " + ParseEvent(s, false, true));
                 }
                 else
                 {
@@ -119,7 +119,7 @@ namespace SteinsGAIA
             {
                 for (int e = 0; e < GloDat.Events.Count; e++)
                 {
-                    ParseEvent(GloDat.Events[e], false);
+                    ParseEvent(GloDat.Events[e], false, false);
 
                     if (GloDat.evDate != GloDat.DateOrd[d] || GloDat.EventsSortedByDate.Contains(GloDat.Events[e]))
                     {
@@ -174,7 +174,7 @@ namespace SteinsGAIA
                 if (int.Parse(ev) - 1 < GloDat.Events.Count) //check number is an existing event
                 {
                     string i = GloDat.Events[int.Parse(ev) - 1];
-                    ParseEvent(i, false);
+                    ParseEvent(i, false, false);
                     sortCauses(GloDat.EventCauses[int.Parse(ev) - 1]);
                     if (GloDat.evCauses.Count == 0)
                     {
@@ -206,7 +206,7 @@ namespace SteinsGAIA
                         result += " ";
                     }
                     result += index.ToString();
-                    listBox7.Items.Add("[" + (GloDat.Events.IndexOf(pair.Key) + 1) + "] " + ParseEvent(pair.Key, false));
+                    listBox7.Items.Add("[" + (GloDat.Events.IndexOf(pair.Key) + 1) + "] " + ParseEvent(pair.Key, false, false));
                 }
             }
             UpdText(result);
@@ -236,7 +236,7 @@ namespace SteinsGAIA
                     // formatting - each rule will be one chunk of code, no empty lines between them, and separated by these // RULE comments
 
                     // RULE ONE: a BTT arriving in the past will arrive before any events that have a higher date.
-                    
+
                     if (wlCounter > 1 && GloDat.evType == "bttarv") // if this is the 2nd+ wl, and last one ended via btt, then this deletes all events happening after the btt arival date, preserving all with a date prior or equal
                     {
                         int j = GloDat.DateOrd.IndexOf(GloDat.evDate);
@@ -244,7 +244,7 @@ namespace SteinsGAIA
                         for (int i = CurrentWorldLine.Count - 1; i >= 0; i--)
                         {
                             string ev = CurrentWorldLine[i];
-                            ParseEvent(ev, false);
+                            ParseEvent(ev, false, false);
                             if (GloDat.DateOrd.IndexOf(GloDat.evDate) > j || (GloDat.DateOrd.IndexOf(GloDat.evDate) == j && GloDat.evType == "bttarv")) // deletes events of dates higher than the arriving btt that started this wl, and deletes btt arrivals sharing the same btt arrival date
                             {
                                 CurrentWorldLine.Remove(ev); // remove all events happening after the arriving BTT date. they may return based on causes in later rules.
@@ -252,17 +252,20 @@ namespace SteinsGAIA
                         }
                         for (int i = 0; i < CurrentWorldLine.Count; i++)
                         {
-                            string parsed = ParseEvent(CurrentWorldLine[i], true);
+                            string parsed = ParseEvent(CurrentWorldLine[i], true, false);
                             if (GloDat.evType == "bttdep")
                             {
                                 Console.WriteLine(parsed + " \u001b[38;2;30;30;40m(in holding)\u001b[37m"); // parsing an event will also return a readable sentence version rather than code
-                            } else
+                            } else if (GloDat.evType == "bttarv") {
+                                Console.WriteLine($"{parsed} {GloDat.evSuffix.Replace("<", "-")}");
+                            }
+                            else
                             {
                                 Console.WriteLine(parsed);
                             }
                         }
                         CurrentWorldLine.Add(wlStart); // adding the btt arrival event now
-                        Console.WriteLine(ParseEvent(wlStart, true)); // printing translated readable ver to console
+                        Console.WriteLine($"{ParseEvent(wlStart, true, false)} {GloDat.evSuffix}"); // printing translated readable ver to console
                     }
                     else
                     {
@@ -274,11 +277,11 @@ namespace SteinsGAIA
                     for (int i = CustomIndexOf(GloDat.EventsSortedByDate, wlStart); i < GloDat.EventsSortedByDate.Count; i++) // 1 loop = 1 event checked. starting from events with the same date as the event in var 'wlStart', likely the BTT arrival event.
                     {
                         //Console.WriteLine($"{GloDat.evLabel} !! {wlStart}, {CustomIndexOf(GloDat.EventsSortedByDate, wlStart)}");
-                        LoadAllLists(GloDat.allLists[4], 4);//updates dates listbox
+                        //LoadAllLists(GloDat.allLists[4], 4);//updates dates listbox
 
                         if (CustomIndexOf(CurrentWorldLine, GloDat.EventsSortedByDate[i]) != -1) { continue; } // if the event we are checking already exists on the wl, skip to next event
                         bool addEv = AddEventOrNot(i, CurrentWorldLine); // goes to a function checking if the current worldline contains causes or preventatives for the event in question, returns true (=it should be added) or false
-                        string parsed = ParseEvent(GloDat.EventsSortedByDate[i], true);
+                        string parsed = ParseEvent(GloDat.EventsSortedByDate[i], true, false);
                         if (addEv && GloDat.evType != "bttdep")
                         {
                             CurrentWorldLine.Add(GloDat.EventsSortedByDate[i]); Console.WriteLine(parsed);
@@ -306,7 +309,7 @@ namespace SteinsGAIA
                             }
 
                             int departResult = 0;
-                            ParseEvent(GloDat.EventsSortedByDate[i], false);
+                            ParseEvent(GloDat.EventsSortedByDate[i], false, false);
                             string getEv = $">{GloDat.evLabel}#{GloDat.evBttDate}\\";
                             //foreach (string aa in GloDat.Events) { if (aa.Split('*')[0] == getEv) { getEv = aa; } }   // if theres something in between the bttarrivaldate and influences this would fix but dont think i'll need it
 
@@ -315,12 +318,11 @@ namespace SteinsGAIA
                             {
                                 //this is after the 'OR' in rule 3 description, we search prior worldlines now (ignoring the AF thing cus dont have em yet)
                                 List<string> currentUpToNextArrive = new List<string> { "-" };
-                                ParseEvent(GloDat.EventsSortedByDate[i], false);
                                 //Console.WriteLine(GloDat.EventsSortedByDate[i] + " ????");
                                 int dateReadTo = GloDat.DateOrd.IndexOf(GloDat.BTTDates[int.Parse(GloDat.evBttDate) - 1]);
                                 for (int ja = 0; ja < CurrentWorldLine.Count; ja++)
                                 {
-                                    ParseEvent(CurrentWorldLine[ja], false);
+                                    ParseEvent(CurrentWorldLine[ja], false, false);
                                     //currentUpToNextArrive.Add(CurrentWorldLine[ja]);
                                     //Console.WriteLine($"huh {GloDat.DateOrd.IndexOf(GloDat.evDate)} and {dateReadTo}");
                                     int dateCheck = GloDat.DateOrd.IndexOf(GloDat.evDate);
@@ -367,9 +369,10 @@ namespace SteinsGAIA
                                 if (!identicalPreviousWL)
                                 {
                                     departResult = 0;
-                                    Console.WriteLine(parsed); // adds btt depart msg (code already added to wl before this if)
+                                    ParseEvent(GloDat.EventsSortedByDate[i], false, false); // updates suffix thing
+                                    Console.WriteLine($"{parsed} {GloDat.evSuffix}"); // adds btt depart msg (code already added to wl before this if)
 
-                                    ParseEvent(getEv, false);
+                                    ParseEvent(getEv, false, false);
 
                                     wlStart = getEv + BTTInfluenceAddon;
                                     endGen = false;
@@ -489,7 +492,7 @@ namespace SteinsGAIA
                     foreach (string ev in GloDat.Events)
                     {
                         n++;
-                        Console.WriteLine($"{n}) {ParseEvent(ev, true)}");
+                        Console.WriteLine($"{n}) {ParseEvent(ev, true, true)}");
                     }
                 }
                 panel1.Visible = false;
@@ -658,7 +661,7 @@ namespace SteinsGAIA
                         LoadAllLists(GloDat.allLists[0], 0);//updates events listbox
                         GloDat.EventCauses.Add("");
                         LoadAllLists(GloDat.allLists[1], 1);//updates eventcauses listbox
-                        Console.WriteLine($"Created event '{ParseEvent(eventBuild, true)}' ({eventBuild})");
+                        Console.WriteLine($"Created event '{ParseEvent(eventBuild, true, false)}' ({eventBuild})");
                     }
                     else
                     {
@@ -670,7 +673,7 @@ namespace SteinsGAIA
                         {
                             if (eve.Contains('<') && eve.Contains('\\'))//btt departure event
                             {
-                                ParseEvent(eve, false);
+                                ParseEvent(eve, false, false);
                                 if (GloDat.evLabel == eventBuild)
                                 {
                                     matchEntityListArrivals.Add(GloDat.BTTDates[int.Parse(eve.Split('\\')[1]) - 1]);
@@ -743,7 +746,7 @@ namespace SteinsGAIA
                         }
                         GloDat.Events.Add(eventBuild);
                         GloDat.EventCauses.Add("");
-                        Console.WriteLine($"Created departure event '{ParseEvent(eventBuild, true)}' ({eventBuild})");
+                        Console.WriteLine($"Created departure event '{ParseEvent(eventBuild, true, false)}' ({eventBuild})");
                         if (!GloDat.Events.Contains(eventArrival))
                         {
                             Console.WriteLine("+created its paired arrival event");
@@ -843,7 +846,7 @@ namespace SteinsGAIA
                     segment.Add(bigList[i]);
                     continue;
                 }
-                ParseEvent(bigList[i], false);
+                ParseEvent(bigList[i], false, false);
                 if (currentIndex == index && (GloDat.DateOrd.IndexOf(GloDat.evDate) < dateReadTo || bigList[i] == keepBTTArrival)) // dont add events of the same date, will conflict if listed as an earlier dated event
                 {
                     segment.Add(bigList[i]);
@@ -870,7 +873,7 @@ namespace SteinsGAIA
                     {
                         n++;
                         string gap = $"\u001b[30m{n}  \u001b[37m";
-                        Console.WriteLine($"{n}) {ParseEvent(ev, true)}");
+                        Console.WriteLine($"{n}) {ParseEvent(ev, true, true)}");
                         if (GloDat.EventCauses[n - 1] == "/")
                         {
                             Console.WriteLine($"{gap}\u001b[38;2;45;45;60m---\u001b[37m");
@@ -882,7 +885,7 @@ namespace SteinsGAIA
                             {
                                 if (causeSplit[j] != "+" && causeSplit[j] != "-" && causeSplit[j] != "/")
                                 {
-                                    ParseEvent(GloDat.Events[int.Parse(causeSplit[j].Split('|')[0]) - 1], false);
+                                    ParseEvent(GloDat.Events[int.Parse(causeSplit[j].Split('|')[0]) - 1], false, false);
                                     causeSplit[j] = $"{GloDat.evColor}{causeSplit[j]}\u001b[37m";
                                 }
                             }

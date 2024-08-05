@@ -31,6 +31,7 @@ public class Program
         public static string evType = null;
         public static string evLabel = null;
         public static string evColor = null;
+        public static string evSuffix = null;
         public static List<int> evCauses = new List<int>();
         public static List<int> evPreventatives = new List<int>();
         public static string exeDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
@@ -169,7 +170,7 @@ public class Program
         return string.Join(" ", matchingIndices);
     }
 
-    public static string ParseEvent(string ev, bool colors)
+    public static string ParseEvent(string ev, bool colors, bool ttPrefix)
     {
         char[] separators = { '<', '>', '(', ')', '#', '\\', '/', '*' };
         string[] parts = ev.Split(new [] {'|'}, StringSplitOptions.RemoveEmptyEntries);
@@ -191,20 +192,41 @@ public class Program
 
         if (ev.Contains("<"))
         {
+            string tt = null;
+            if (colors)
+            {
+                GloDat.evSuffix = $"\u001b[38;2;200;0;0m->\u001b[37m";
+            }
+            if (ttPrefix)
+            {
+                tt = "BTT-";
+            }
             if (ev.Contains("\\"))
             {
                 GloDat.evBttDate = parts[2];
                 GloDat.evType = "bttdep";
-                evText = "BTT-" + parts[0] + " leaves from date " + parts[1] + " to date " + GloDat.BTTDates[int.Parse(GloDat.evBttDate) - 1];
+                evText = tt + parts[0] + " leaves from date " + parts[1] + " to date " + GloDat.BTTDates[int.Parse(GloDat.evBttDate) - 1];
             }
             if (ev.Contains("/"))
             {
+                if (ttPrefix)
+                {
+                    tt = "FTT-";
+                }
                 GloDat.evType = "fttdep";
-                evText = $"FTT-{parts[0]} leaves from date {parts[1]} to date {parts[2]}";
+                evText = $"{tt}{parts[0]} leaves from date {parts[1]} to date {parts[2]}";
             }
         } else if (ev.Contains(">"))
         {
-            string tt = "BTT-";
+            string tt = null;
+            if (colors)
+            {
+                GloDat.evSuffix = $"\u001b[38;2;0;40;160m<-\u001b[37m";
+            }
+            if (ttPrefix)
+            {
+                tt = "BTT-";
+            }
             if (ev.Contains("\\"))
             {
                 GloDat.evType = "bttarv";
@@ -213,7 +235,10 @@ public class Program
             }
             if (ev.Contains("/"))
             {
-                tt = "FTT-";
+                if (ttPrefix)
+                {
+                    tt = "FTT-";
+                }
                 GloDat.evType = "fttarv";
             }
             evText = $"{tt}{parts[0]} arrives on date {parts[1]}";
